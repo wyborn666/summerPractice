@@ -1,0 +1,27 @@
+<RCC>
+  <qresource prefix="icons">
+    <file>image/Delete-80_icon-icons.com_57340.png</file>
+    <file>image/align.png</file>
+    <file>image/align_text_center_icon_155836.png</file>
+    <file>image/align-left.png</file>
+    <file>image/align-right.png</file>
+    <file>image/bold.png</file>
+    <file>image/copy.png</file>
+    <file>image/cutting.png</file>
+    <file>image/eye-dropper.png</file>
+    <file>image/file.png</file>
+    <file>image/files.png</file>
+    <file>image/folder.png</file>
+    <file>image/font.png</file>
+    <file>image/icons8-export-pdf-40.png</file>
+    <file>image/icons8-selective-highlighting-24.png</file>
+    <file>image/italic-font.png</file>
+    <file>image/open.png</file>
+    <file>image/printer.png</file>
+    <file>image/redo.png</file>
+    <file>image/save.png</file>
+    <file>image/underline.png</file>
+    <file>image/undo.png</file>
+    <file>image/windows-copy-icon-28.png</file>
+  </qresource>
+</RCC>
