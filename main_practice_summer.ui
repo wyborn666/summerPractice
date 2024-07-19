@@ -130,6 +130,9 @@
     <addaction name="actionCenter_4"/>
     <addaction name="actionRighy"/>
     <addaction name="actionJustify_2"/>
+    <addaction name="separator"/>
+    <addaction name="actionCreate_Style"/>
+    <addaction name="actionMargins"/>
    </widget>
    <widget class="QMenu" name="menuText_Highlighter">
     <property name="title">
@@ -615,6 +618,16 @@
   <action name="actionImage">
    <property name="text">
     <string>Вставить Изобр</string>
+   </property>
+  </action>
+  <action name="actionCreate_Style">
+   <property name="text">
+    <string>Create Style</string>
+   </property>
+  </action>
+  <action name="actionMargins">
+   <property name="text">
+    <string>Margins</string>
    </property>
   </action>
  </widget>
