@@ -1,0 +1,68 @@
+{
+    "fffffffffffffffffffffff": {
+        "font_family": "Old English Text MT",
+        "font_size": 10,
+        "color": "#ff557f",
+        "alignment": "Left",
+        "margins": {
+            "left": 0,
+            "right": 0
+        },
+        "lineSpacing": 50
+    },
+    "Default": {
+        "font_family": "Calibri",
+        "font_size": 14,
+        "color": "#000000",
+        "alignment": "Left",
+        "margins": {
+            "left": 0,
+            "right": 0
+        },
+        "lineSpacing": 25
+    },
+    "qqqqqqqqqqqqq": {
+        "font_family": "Rockwell Condensed",
+        "font_size": 36,
+        "color": "#00aaff",
+        "alignment": "Left",
+        "margins": {
+            "left": 0,
+            "right": 0
+        },
+        "lineSpacing": 50
+    },
+    "dsaddddddddddd": {
+        "font_family": "MS Sans Serif",
+        "font_size": 14,
+        "color": "#ff55ff",
+        "alignment": "Left",
+        "margins": {
+            "left": 0,
+            "right": 0
+        },
+        "lineSpacing": 50
+    },
+    "pasha": {
+        "font_family": "MS Shell Dlg 2",
+        "font_size": 9,
+        "color": "#ffff7f",
+        "alignment": "Left",
+        "margins": {
+            "left": 0,
+            "right": 0
+        },
+        "lineSpacing": 50
+    },
+    "d": {
+        "font_family": "MS Shell Dlg 2",
+        "font_size": 8,
+        "color": "#ffff7f",
+        "alignment": "Left",
+        "margins": {
+            "left": 0,
+            "right": 0
+        },
+        "lineSpacing": 25
+    }
+}
