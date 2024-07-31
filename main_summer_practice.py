@@ -1,10 +1,11 @@
 import sys
 import json
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QTextBrowser, QAction, QFileDialog, QWidget, QMessageBox, QTextEdit,
-                             QFontDialog, QColorDialog, QPushButton, QDialog, QComboBox, QLabel, QVBoxLayout, QInputDialog, QSpinBox)
+                             QFontDialog, QColorDialog, QPushButton, QDialog, QComboBox, QLabel, QVBoxLayout, QInputDialog, 
+                             QSpinBox, QGridLayout, QLineEdit)
 from PyQt5 import uic, QtCore, QtGui
-from PyQt5.QtGui import QTextCursor, QPixmap, QKeySequence, QFont, QTextCharFormat, QColor, QTextBlockFormat, QImage, QTextDocument
-from PyQt5.QtCore import QFileInfo, Qt, QUrl
+from PyQt5.QtGui import QTextCursor, QPixmap, QKeySequence, QFont, QTextCharFormat, QColor, QTextBlockFormat, QImage, QTextDocument, QBrush, QDesktopServices
+from PyQt5.QtCore import QFileInfo, Qt, QUrl, QPoint, QRegExp, QEvent
 from PyQt5.QtPrintSupport import QPrintDialog, QPrinter, QPrintPreviewDialog
 from functools import partial
 from docx import Document
@@ -59,6 +60,7 @@ class MarginsDialog(QDialog):
         self.leftMargin.setValue(margins.get("left", 0))
         self.rightMargin.setValue(margins.get("right", 0))
         self.lineSpacing.setValue(margins.get("lineSpacing", self.DEFAULT_LINE_SPACING) if margins.get("lineSpacing", self.DEFAULT_LINE_SPACING) != self.DEFAULT_LINE_SPACING else 0)
+
 
 class StyleDialog(QDialog):
     def __init__(self, parent=None):
@@ -160,6 +162,183 @@ class StyleDialog(QDialog):
                 self.parent().saveStyles(self.styles)
 
 
+class FindDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+
+        self.setWindowTitle("Find and Replace")
+
+        layout = QGridLayout()
+        self.finding_text = QLineEdit()
+        layout.addWidget(QLabel("Find:"), 0, 0)
+        layout.addWidget(self.finding_text, 0, 1)
+
+        self.findButton = QPushButton("Find")
+        layout.addWidget(self.findButton)
+
+        self.comboBox = QComboBox()
+        self.comboBox.addItems(["Select full word", "Select piece"])
+        layout.addWidget(self.comboBox)
+
+        self.setLayout(layout)
+
+        self.extraSelections = []
+        self.changed = False
+        self.isFullWord = True
+
+        self.setWhatsThis("Whats this")
+        self.setWindowFlags(Qt.WindowContextHelpButtonHint | Qt.WindowCloseButtonHint)
+
+        self.findButton.clicked.connect(self.find)
+
+    def appendExtraSelection(self, tc):
+            
+            ex = QTextEdit.ExtraSelection()            
+            ex.cursor = tc
+            ex.format.setBackground(QBrush(Qt.yellow))
+            self.extraSelections.append(ex)
+
+    def find(self):
+        self.comboBox.currentTextChanged.connect(self.onComboboxChanged)
+
+        if self.changed: 
+            self.extraSelections.clear()
+
+        pattern = self.finding_text.text()
+
+        cursor = self.parent.textEdit.textCursor()
+        cursor.setPosition(0)
+        doc = self.parent.textEdit.document()
+
+        regex = QRegExp(pattern)
+
+        self.isFullWord = True if self.comboBox.currentText() == "Select full word" else False
+
+        pos = 0
+        index = regex.indexIn(self.parent.textEdit.toPlainText(), pos)
+        while (index != -1):
+
+            cursor.setPosition(index)
+
+            if self.isFullWord:
+                cursor.movePosition(QTextCursor.EndOfWord, 1)
+                if (cursor.selectionEnd() - cursor.selectionStart() == len(pattern)):
+                    self.appendExtraSelection(cursor)
+
+
+            if not self.isFullWord:
+                cursor = doc.find(pattern, index)
+                if not cursor.isNull(): 
+                    self.appendExtraSelection(cursor)
+
+            pos = index + regex.matchedLength()
+            index = regex.indexIn(self.parent.textEdit.toPlainText(), pos)
+
+        self.parent.textEdit.setExtraSelections(self.extraSelections)
+
+    def closeEvent(self, event):
+        self.extraSelections.clear()
+        self.parent.textEdit.setExtraSelections(self.extraSelections)
+        self.close()
+
+    def onComboboxChanged(self, value):
+        self.changed = True
+
+        
+class ReplaceDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__()
+        self.parent = parent
+
+        self.setWindowTitle("Replace")
+
+        self.gen_layout = QGridLayout()
+
+        self.replacing_text = QLineEdit()
+        self.gen_layout.addWidget(QLabel("Replace:"), 0, 0)
+        self.gen_layout.addWidget(self.replacing_text, 0, 1)
+
+        self.to_text = QLineEdit()
+        self.gen_layout.addWidget(QLabel("To:"), 1, 0)
+        self.gen_layout.addWidget(self.to_text, 1, 1)
+
+        self.replaceButton = QPushButton("Replace")
+        self.gen_layout.addWidget(self.replaceButton)
+
+        self.setLayout(self.gen_layout) 
+
+        self.replaceButton.clicked.connect(self.replace)
+
+
+    def replace(self):
+        self.replaceRec(0)
+
+
+    def replaceRec(self, pos):
+        
+        doc = self.parent.textEdit.document()
+        tc = QTextCursor(doc)
+
+        pattern_for_replace = self.replacing_text.text()
+        pattern_new = self.to_text.text()
+
+        tc = doc.find(pattern_for_replace, pos)
+        if not tc.isNull():
+            tc.removeSelectedText()
+            tc.insertText(pattern_new)
+            self.replaceRec(tc.selectionEnd())
+
+
+class HrefDialog(QDialog):
+    def __init__(self, parent):
+        super().__init__(parent)
+
+        self.parent = parent
+
+        self.setWindowTitle("Insert hyperlink")
+
+
+        layout = QGridLayout()
+        self.adress = QLineEdit()
+        layout.addWidget(QLabel("Adress:"), 0, 0)
+        layout.addWidget(self.adress, 0, 1)
+
+        self.word = QLineEdit()
+        layout.addWidget(QLabel("Text:"), 1, 0)
+        layout.addWidget(self.word, 1, 1)
+
+        self.insertButton = QPushButton("Insert")
+        layout.addWidget(self.insertButton)
+
+        self.setLayout(layout)
+
+        self.insertButton.clicked.connect(self.insertHyperlink)
+
+    def insertHyperlink(self):
+        cursor = self.parent.textEdit.textCursor()
+
+        format = cursor.charFormat()
+        format_original = cursor.charFormat()
+        format.setForeground(QColor("blue"))
+        format.setFontUnderline(True)
+
+        if not self.adress.text():
+            QMessageBox.critical(self, "Error", "Adress line is empty")
+        
+        if not self.word.text():
+            self.word.setText(self.adress.text())
+        
+        format.setAnchor(True)
+        format.setAnchorHref(self.adress.text())
+        format.setToolTip(self.adress.text())
+
+        cursor.insertText(self.word.text(), format)
+        cursor.insertText(" ", format_original)
+
+        self.close()
+
+
 class MyWidget(QMainWindow):
     def __init__(self):
         super().__init__()
@@ -214,6 +393,10 @@ class MyWidget(QMainWindow):
         self.actionJustify.triggered.connect(self.setAlignment)
         self.actionMargins.triggered.connect(self.openMarginsDialog)
         self.actionMargins_2.triggered.connect(self.openMarginsDialog)
+
+        self.actionFind.triggered.connect(self.findWindow)
+        self.actionReplace.triggered.connect(self.replaceWindow)
+        self.actionInsert_new.triggered.connect(self.insert)
 
         self.actionBold.setShortcut(QKeySequence.Bold)
         self.actionBold.setCheckable(True)
@@ -542,6 +725,18 @@ class MyWidget(QMainWindow):
         else:
             super().keyPressEvent(event)
 
+    def mousePressEvent(self, event):
+        x, y = event.pos().x(), event.pos().y()
+        new_pos = QPoint(x, y - 61)
+        self.anchor = self.textEdit.anchorAt(new_pos)
+        
+        if self.anchor:
+            QApplication.setOverrideCursor(Qt.PointingHandCursor)
+
+            QDesktopServices.openUrl(QUrl(self.anchor))
+            QApplication.setOverrideCursor(Qt.ArrowCursor)
+            self.anchor = None
+ 
     def openMarginsDialog(self):
         dialog = MarginsDialog(self)
         dialog.setMargins(self.currentMargins)  # Set current margins
@@ -566,6 +761,18 @@ class MyWidget(QMainWindow):
         else:
             cursor.setBlockFormat(blockFormat)
             self.textEdit.setTextCursor(cursor)
+
+    def findWindow(self):
+        self.dialog = FindDialog(self)
+        self.dialog.exec_()
+    
+    def replaceWindow(self):
+        self.dialog = ReplaceDialog(self)
+        self.dialog.exec_()
+
+    def insert(self):
+        self.dialog = HrefDialog(self)
+        self.dialog.exec_()
 
 
 if __name__ == '__main__':

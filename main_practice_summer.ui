@@ -664,6 +664,21 @@
     <string>go</string>
    </property>
   </action>
+  <action name="actionFind">
+   <property name="text">
+    <string>Find</string>
+   </property>
+  </action>
+  <action name="actionReplace">
+   <property name="text">
+    <string>Replace</string>
+   </property>
+  </action>
+  <action name="actionInsert_new">
+   <property name="text">
+    <string>Insert new</string>
+   </property>
+  </action>
  </widget>
  <resources>
   <include location="res.qrc"/>
