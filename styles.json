@@ -64,5 +64,82 @@
             "right": 0
         },
         "lineSpacing": 25
+    },
+    "test": {
+        "font_family": "MS Sans Serif",
+        "font_size": 15,
+        "color": "#ff007f",
+        "alignment": "Left",
+        "margins": {
+            "left": 0,
+            "right": 0
+        },
+        "lineSpacing": 25
+    },
+    "fsafsa": {
+        "font_family": "MS Shell Dlg 2",
+        "font_size": 28,
+        "color": "#00ff00",
+        "alignment": "Center",
+        "margins": {
+            "left": 0,
+            "right": 0
+        },
+        "lineSpacing": 25
+    },
+    "das": {
+        "font_family": "MS Shell Dlg 2",
+        "font_size": 9,
+        "color": "#ffffff",
+        "alignment": "Left",
+        "margins": {
+            "left": 0,
+            "right": 0
+        },
+        "lineSpacing": 25
+    },
+    "fsa": {
+        "font_family": "MS Shell Dlg 2",
+        "font_size": 14,
+        "color": "#55aaff",
+        "alignment": "Left",
+        "margins": {
+            "left": 0,
+            "right": 0
+        },
+        "lineSpacing": 25
+    },
+    "sadsad": {
+        "font_family": "MS Shell Dlg 2",
+        "font_size": 22,
+        "color": "#ffaaff",
+        "alignment": "Left",
+        "margins": {
+            "left": 0,
+            "right": 0
+        },
+        "lineSpacing": 25
+    },
+    "dsadsa": {
+        "font_family": "MS Shell Dlg 2",
+        "font_size": 10,
+        "color": "#55ff7f",
+        "alignment": "Left",
+        "margins": {
+            "left": 0,
+            "right": 0
+        },
+        "lineSpacing": 35
+    },
+    "bb": {
+        "font_family": "MS Shell Dlg 2",
+        "font_size": 10,
+        "color": "#000000",
+        "alignment": "Left",
+        "margins": {
+            "left": 0,
+            "right": 0
+        },
+        "lineSpacing": 25
     }
 }
