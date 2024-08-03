@@ -2,24 +2,19 @@ import sys
 import json
 import typing
 
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QTextBrowser, QAction, QFileDialog, QWidget, QMessageBox, QTextEdit,
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QAction, QFileDialog, QWidget, QMessageBox, QTextEdit,
                              QFontDialog, QColorDialog, QPushButton, QDialog, QComboBox, QLabel, QVBoxLayout, QInputDialog,
                              QSpinBox, QGridLayout, QLineEdit, QHBoxLayout, QScrollArea)
 from PyQt5 import uic, QtCore, QtGui
-from PyQt5.QtGui import QTextCursor, QPixmap, QKeySequence, QFont, QTextCharFormat, QColor, QTextBlockFormat, QImage,\
+from PyQt5.QtGui import QTextCursor, QPixmap, QKeySequence, QFont, QTextCharFormat, QColor, QTextBlockFormat,\
     QTextDocument, QBrush, QDesktopServices, QTextFrameFormat, QKeyEvent, QPaintEvent, QPainter, QPen, QBrush, QColor
-from PyQt5.QtCore import QFileInfo, Qt, QUrl, QPoint, QRegExp, QEvent, QSizeF, QByteArray, QBuffer, QIODevice
+from PyQt5.QtCore import Qt, QUrl, QPoint, QRegExp, QEvent, QSizeF, QByteArray, QBuffer, QIODevice
 from PyQt5.QtPrintSupport import QPrintDialog, QPrinter, QPrintPreviewDialog
 from functools import partial
 
 from PyQt6.QtCore import QIODeviceBase
-from docx import Document
-from docx.shared import RGBColor, Pt
-from docx.enum.text import WD_PARAGRAPH_ALIGNMENT
 import res_rc
-import webbrowser
 from zipfile import ZipFile, ZIP_DEFLATED
-import fitz
 import hashlib
 
 
@@ -29,27 +24,28 @@ class MarginsDialog(QDialog):
 
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Установка отступов и межстрочных интервалов")
+        self.setFixedSize(330, 220)
+        self.setWindowTitle("Margins and Line spacing")
 
         layout = QVBoxLayout()
 
         self.leftMargin = QSpinBox()
         self.leftMargin.setRange(0, 100)
-        layout.addWidget(QLabel("Отступ слева:"))
+        layout.addWidget(QLabel("Left margin:"))
         layout.addWidget(self.leftMargin)
 
         self.rightMargin = QSpinBox()
         self.rightMargin.setRange(0, 100)
-        layout.addWidget(QLabel("Отступ справа:"))
+        layout.addWidget(QLabel("Right margin"))
         layout.addWidget(self.rightMargin)
 
         self.lineSpacing = QSpinBox()
         self.lineSpacing.setRange(0, 100)
         self.lineSpacing.setValue(0)  # Установка значения по умолчанию в 0
-        layout.addWidget(QLabel("Межстрочный интервал:(25 = 0)"))
+        layout.addWidget(QLabel("Line spacing(25 = 0)"))
         layout.addWidget(self.lineSpacing)
 
-        self.applyButton = QPushButton("Применить")
+        self.applyButton = QPushButton("Accept")
         self.applyButton.clicked.connect(self.accept)
         layout.addWidget(self.applyButton)
 
@@ -71,23 +67,24 @@ class MarginsDialog(QDialog):
 class StyleDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setWindowTitle("Выбор стиля")
+        self.setFixedSize(300, 150)
+        self.setWindowTitle("Choose Style")
 
         self.layout = QVBoxLayout(self)
 
         self.comboBox = QComboBox(self)
-        self.layout.addWidget(QLabel("Выберите стиль"))
+        self.layout.addWidget(QLabel("Choose Style"))
         self.layout.addWidget(self.comboBox)
 
-        self.newStyleButton = QPushButton("Создать новый стиль", self)
+        self.newStyleButton = QPushButton("Create new style", self)
         self.newStyleButton.clicked.connect(self.createNewStyle)
         self.layout.addWidget(self.newStyleButton)
 
-        self.deleteStyleButton = QPushButton("Удалить стиль", self)
+        self.deleteStyleButton = QPushButton("Delete style", self)
         self.deleteStyleButton.clicked.connect(self.deleteStyle)
         self.layout.addWidget(self.deleteStyleButton)
 
-        self.applyButton = QPushButton("Применить", self)
+        self.applyButton = QPushButton("Accept", self)
         self.applyButton.clicked.connect(self.applyStyle)
         self.layout.addWidget(self.applyButton)
 
@@ -118,9 +115,9 @@ class StyleDialog(QDialog):
                 marginsDialog.exec_()
                 margins = marginsDialog.getMargins()
 
-                styleName, ok = QInputDialog.getText(self, "Название стиля", "Введите название стиля:")
+                styleName, ok = QInputDialog.getText(self, "Style name", "Enetr style name:")
                 if ok and styleName:
-                    alignment, ok = QInputDialog.getItem(self, "Выравнивание", "Выберите выравнивание:",
+                    alignment, ok = QInputDialog.getItem(self, "Alignment", "Choose alignment:",
                                                          ["Left", "Center", "Right", "Justify"], 0, False)
                     if ok:
                         lineSpacing = margins.pop("lineSpacing", MarginsDialog.DEFAULT_LINE_SPACING)
@@ -155,12 +152,12 @@ class StyleDialog(QDialog):
                 self.parent().applyTextStyle(charFormat, alignment, margins, lineSpacing)
             self.accept()
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Произошла ошибка при применении стиля: {str(e)}")
+            QMessageBox.critical(self, "Error", f"Error occured when applying the style: {str(e)}")
 
     def deleteStyle(self):
         styleName = self.comboBox.currentText()
         if styleName in self.styles:
-            reply = QMessageBox.question(self, "Удаление стиля", f"Вы уверены, что хотите удалить стиль '{styleName}'?",
+            reply = QMessageBox.question(self, "Delete the style", f"Are you sure, you want to delete the style '{styleName}'?",
                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
             if reply == QMessageBox.Yes:
                 del self.styles[styleName]
@@ -189,7 +186,6 @@ class FindDialog(QDialog):
 
         self.setLayout(layout)
 
-        self.extraSelections = []
         self.changed = False
         self.isFullWord = True
 
@@ -199,27 +195,37 @@ class FindDialog(QDialog):
         self.findButton.clicked.connect(self.find)
 
     def appendExtraSelection(self, tc):
-
-            ex = QTextEdit.ExtraSelection()
+            
+            ex = QTextEdit.ExtraSelection()            
             ex.cursor = tc
             ex.format.setBackground(QBrush(Qt.yellow))
-            self.extraSelections.append(ex)
+            self.parent.extraSelections.append(ex)
 
     def find(self):
         self.comboBox.currentTextChanged.connect(self.onComboboxChanged)
+        self.parent.extraSelections.clear()
+        self.isFullWord = True if self.comboBox.currentText() == "Select full word" else False
 
-        if self.changed:
-            self.extraSelections.clear()
+        if self.changed: 
+            self.parent.extraSelections.clear()
 
         pattern = self.finding_text.text()
 
         cursor = self.parent.textEdit.textCursor()
+        spec_cursor = self.parent.textEdit.textCursor()
+        
         cursor.setPosition(0)
+        spec_cursor.setPosition(0)
+
         doc = self.parent.textEdit.document()
+        reg = str(pattern)
 
-        regex = QRegExp(pattern)
+        if "?" in pattern:
+            reg = pattern.replace("?", "[^ ]?")
+        elif "*" in pattern:
+            reg = pattern.replace("*", "[^ ]+")
 
-        self.isFullWord = True if self.comboBox.currentText() == "Select full word" else False
+        regex = QRegExp("\\b" + str(reg) + "\\b") if self.isFullWord else QRegExp(str(reg))
 
         pos = 0
         index = regex.indexIn(self.parent.textEdit.toPlainText(), pos)
@@ -229,23 +235,21 @@ class FindDialog(QDialog):
 
             if self.isFullWord:
                 cursor.movePosition(QTextCursor.EndOfWord, 1)
-                if (cursor.selectionEnd() - cursor.selectionStart() == len(pattern)):
+                if not cursor.isNull(): 
                     self.appendExtraSelection(cursor)
-
 
             if not self.isFullWord:
                 cursor = doc.find(pattern, index)
-                if not cursor.isNull():
+                if not cursor.isNull(): 
                     self.appendExtraSelection(cursor)
 
             pos = index + regex.matchedLength()
             index = regex.indexIn(self.parent.textEdit.toPlainText(), pos)
 
-        self.parent.textEdit.setExtraSelections(self.extraSelections)
+        self.parent.textEdit.setExtraSelections(self.parent.extraSelections)
 
     def closeEvent(self, event):
-        self.extraSelections.clear()
-        self.parent.textEdit.setExtraSelections(self.extraSelections)
+        self.parent.d = "Find"
         self.close()
 
     def onComboboxChanged(self, value):
@@ -303,7 +307,6 @@ class HrefDialog(QDialog):
         self.parent = parent
 
         self.setWindowTitle("Insert hyperlink")
-
 
         layout = QGridLayout()
         self.adress = QLineEdit()
@@ -365,17 +368,13 @@ class QDocumentEditor(QTextEdit):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
+        '''
         frame_format = QTextFrameFormat()
         frame_format.setMargin(QDocumentEditor.MARGIN)
-        frame_format.setBottomMargin(QDocumentEditor.MARGIN + QDocumentEditor.SPACING)
+        frame_format.setBottomMargin(QDocumentEditor.MARGIN + QDocumentEditor.SPACING)  
+        '''
 
-        brush = QBrush()
-        brush.setStyle(Qt.BrushStyle.SolidPattern)
-        brush.setColor(QColor("red"))
-        frame_format.setBorder(1)
-        frame_format.setBorderBrush(brush)
-
-        self.document().rootFrame().setFrameFormat(frame_format)
+        #self.document().rootFrame().setFrameFormat(frame_format)
 
         self.textChanged.connect(self.updateHeight)
         self.cursorPositionChanged.connect(self.updateCurrentScroll)
@@ -386,22 +385,21 @@ class QDocumentEditor(QTextEdit):
 
         self.document().setPageSize(QDocumentEditor.PAGE_SIZE)
 
+        
         frame_format = QTextFrameFormat()
         frame_format.setMargin(QDocumentEditor.MARGIN)
         frame_format.setBottomMargin(QDocumentEditor.MARGIN + QDocumentEditor.SPACING)
 
+        '''
         brush = QBrush()
         brush.setStyle(Qt.BrushStyle.SolidPattern)
         brush.setColor(QColor("red"))
         frame_format.setBorder(1)
         frame_format.setBorderBrush(brush)
-
+        '''
         self.document().rootFrame().setFrameFormat(frame_format)
 
         self.document().clearUndoRedoStacks()
-
-
-
 
 
     def updateCurrentScroll(self):
@@ -435,6 +433,7 @@ class QDocumentEditor(QTextEdit):
 
         super().paintEvent(event)
 
+
 class QDocument(QTextDocument):
 
     def __init__(self, title: str = "Untitled") -> None:
@@ -453,6 +452,7 @@ class QDocument(QTextDocument):
         super().addResource(type, url, resource)
         if type == QTextDocument.ResourceType.ImageResource:
             self.images.append(url.toString())
+
 
 class QDocumentArchiver:
     CONTENT_FILE_NAME = "content.html"
@@ -534,12 +534,10 @@ class QDocumentArchiver:
         return document
 
 
-
-
 class MyWidget(QMainWindow):
     def __init__(self):
         super().__init__()
-        uic.loadUi('main_practice_summer.ui', self)
+        uic.loadUi('proj/main_practice_summer.ui', self)
 
         contentLayout = QHBoxLayout()
         contentLayout.setContentsMargins(0, 60, 0, 10)
@@ -555,8 +553,6 @@ class MyWidget(QMainWindow):
         self.textEdit.setFont(initial_font)
         self.textEdit.setTabStopDistance(20)
         self.actionDefault.setToolTip("This button allows you to reset all text formatting styles to the initial one")
-
-
 
         self.actionCreate_Style.triggered.connect(self.openStyleDialog)
         self.actionCreate_Style_1.triggered.connect(self.openStyleDialog)
@@ -628,7 +624,11 @@ class MyWidget(QMainWindow):
         self.actionJustify.setCheckable(True)
         self.actionJustify.triggered.connect(partial(self.setAlignment, Qt.AlignJustify))
 
+        self.textEdit.textChanged.connect(self.changeText)
+
         self.styles = self.loadStyles()
+
+        self.extraSelections = []
 
         self.currentMargins = {"left": 0, "right": 0}
         self.actionDefault.triggered.connect(self.applyDefaultStyle)
@@ -713,16 +713,15 @@ class MyWidget(QMainWindow):
 
     def openFile(self):
         filePath, _ = QFileDialog.getOpenFileName(self, 'Open File', '',
-                                                  'Tusha Files (*.tusha)')
+                                                  'Tusha Files (*.summer)')
         if filePath:
             self.textEdit.setDocument(QDocumentArchiver.readDocument(filePath))
 
     def saveFile(self):
-        file_path, _ = QFileDialog.getSaveFileName(self, "Save File", "", "(*.tusha)")
+        file_path, _ = QFileDialog.getSaveFileName(self, "Save File", "", "(*.summer)")
 
         if file_path:
             QDocumentArchiver.saveDocument(file_path, self.textEdit.document())
-
 
     def printfile(self):
         printer = QPrinter(QPrinter.HighResolution)
@@ -863,9 +862,19 @@ class MyWidget(QMainWindow):
             super().keyPressEvent(event)
 
     def mousePressEvent(self, event):
+
         x, y = event.pos().x(), event.pos().y()
-        new_pos = QPoint(x, y - 61)
-        self.anchor = self.textEdit.anchorAt(new_pos)
+
+        if self.size().width() == 1920:
+            self.anchor = self.textEdit.anchorAt(QPoint(x - 560, y - 120 + self.scrollArea.verticalScrollBar().value()))
+        elif self.size().width() == 970:
+            self.anchor = self.textEdit.anchorAt(QPoint(x - 81, y - 120 + self.scrollArea.verticalScrollBar().value()))
+        elif self.size().width() == 1366:
+            self.anchor = self.textEdit.anchorAt(QPoint(x - 280, y - 120 + self.scrollArea.verticalScrollBar().value()))
+        elif self.size().width() == 1440:
+            self.anchor = self.textEdit.anchorAt(QPoint(x - 320, y - 120 + self.scrollArea.verticalScrollBar().value()))
+        elif self.size().width() == 1280:
+            self.anchor = self.textEdit.anchorAt(QPoint(x - 240, y - 120 + self.scrollArea.verticalScrollBar().value()))
 
         if self.anchor:
             QApplication.setOverrideCursor(Qt.PointingHandCursor)
@@ -873,6 +882,9 @@ class MyWidget(QMainWindow):
             QDesktopServices.openUrl(QUrl(self.anchor))
             QApplication.setOverrideCursor(Qt.ArrowCursor)
             self.anchor = None
+        
+
+        super(MyWidget, self).mousePressEvent(event)
 
     def openMarginsDialog(self):
         dialog = MarginsDialog(self)
@@ -909,6 +921,10 @@ class MyWidget(QMainWindow):
     def insert(self):
         self.dialog = HrefDialog(self)
         self.dialog.exec_()
+
+    def changeText(self):
+        self.extraSelections.clear()
+        self.textEdit.setExtraSelections(self.extraSelections)
 
 
 if __name__ == '__main__':
